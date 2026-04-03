@@ -13,7 +13,11 @@ const roleSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-
+    isRoot: {
+      type: Boolean,
+      default: false,
+      immutable: true,
+    },
     permissions: [
       {
         page: {

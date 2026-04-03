@@ -113,6 +113,12 @@ exports.deleteRole = async (req, res) => {
       return res.status(404).json({ message: "Role not found" });
     }
 
+    if (role.isRoot) {
+      return res.status(403).json({
+        message: "Root role cannot be deleted",
+      });
+    }
+
     // 🗑️ Delete only after validation
     await Role.findByIdAndDelete(roleId);
 

@@ -60,7 +60,12 @@ const registerUserByAdmin = async (req, res) => {
         message: "Invalid role selected",
       });
     }
-
+    if (roleExists.isRoot) {
+      return res.status(403).json({
+        success: false,
+        message: "Root role cannot be assigned to users",
+      });
+    }
     // Default password
     const defaultPassword = "12345678";
     const hashedPassword = await hashPassword(defaultPassword);
@@ -439,8 +444,19 @@ const userList = async (req, res) => {
 
 const removeUser = async (req, res) => {
   try {
+    const targetUser = await UserModel.findById(req.params.id).populate("role");
+
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
     if (req.user._id.toString() === req.params.id) {
       return res.status(400).json({ message: "You cannot delete yourself" });
+    }
+    // ❌ Prevent deleting root users
+    if (targetUser.role?.isRoot) {
+      return res.status(403).json({
+        message: "Root users cannot be deleted",
+      });
     }
     const user = await UserModel.findByIdAndDelete(req.params.id);
     res.json(user);
@@ -509,12 +525,18 @@ const updateUser = async (req, res) => {
     const { id } = req.params;
     const { name, email, role } = req.body;
 
-    const user = await UserModel.findById(id);
+    const user = await UserModel.findById(id).populate("role");
 
     if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found",
+      });
+    }
+    if (user.role?.isRoot) {
+      return res.status(403).json({
+        success: false,
+        message: "Root users cannot be modified",
       });
     }
 
@@ -530,7 +552,26 @@ const updateUser = async (req, res) => {
         message: "Email already in use",
       });
     }
+    if (role) {
+      const roleExists = await Roles.findById(role);
 
+      if (!roleExists) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid role selected",
+        });
+      }
+
+      // ❌ Prevent assigning root role
+      if (roleExists.isRoot) {
+        return res.status(403).json({
+          success: false,
+          message: "Root role cannot be assigned to users",
+        });
+      }
+
+      user.role = roleExists._id;
+    }
     user.name = name;
     user.email = email;
     user.role = role;
