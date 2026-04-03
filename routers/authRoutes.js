@@ -16,10 +16,26 @@ const {
 // import middleware
 const { requiredSignIn } = require("../middlewares/authMiddleware.js");
 const { checkPermission } = require("../middlewares/checkPermission.js");
-router.post("/register", registerUserByAdmin);
+
+router.post(
+  "/register",
+  requiredSignIn,
+  checkPermission("users", "canCreate"),
+  registerUserByAdmin,
+);
 router.post("/login", loginUser);
-router.get("/users", userList);
-router.get("/user/:id", getSingleUser);
+router.get(
+  "/users",
+  requiredSignIn,
+  checkPermission("users", "canView"),
+  userList,
+);
+router.get(
+  "/user/:id",
+  requiredSignIn,
+  checkPermission("users", "canView"),
+  getSingleUser,
+);
 router.delete(
   "/user/:id",
   requiredSignIn,
@@ -28,7 +44,12 @@ router.delete(
 );
 router.post("/change-password", requiredSignIn, changePassword);
 router.post("/reset-password/:id", requiredSignIn, resetPassword);
-router.put("/user/:id", updateUser);
+router.put(
+  "/user/:id",
+  requiredSignIn,
+  checkPermission("users", "canUpdate"),
+  updateUser,
+);
 
 router.get("/auth-check", requiredSignIn, (req, res) => {
   res.json({ ok: true });
